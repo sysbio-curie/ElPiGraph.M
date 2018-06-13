@@ -21,8 +21,8 @@ function drawGraph2D(NodePositions,Edges,varargin)
     % Specify default values
     NodeSizes = zeros(NodeNum,1);
     LineWidth = 1;
+    LineColor = 'r';
     showClusterNumbers = 1;
-    Transparency = 1;
     % Parse input features
     for i = 1:2:length(varargin)
         if strcmpi(varargin{i}, 'ShowClusterNumbers')
@@ -31,8 +31,8 @@ function drawGraph2D(NodePositions,Edges,varargin)
             NodeSizes = varargin{i + 1};
         elseif strcmpi(varargin{i}, 'LineWidth')
             LineWidth = varargin{i + 1};
-        elseif strcmpi(varargin{i}, 'Transparency')
-            Transparency = varargin{i + 1};
+        elseif strcmpi(varargin{i}, 'LineColor')
+            LineColor = varargin{i + 1};
         end
     end
 
@@ -51,7 +51,6 @@ function drawGraph2D(NodePositions,Edges,varargin)
     % Rescale node sizes
     ns = double(NodeSizes);
     scale = 20 * sqrt(sum(std(NodePositions(:,1:2)))) / max(ns);
-    scale = scale/15;
     ns = ns * scale;
     np = double(NodePositions);
     
@@ -60,7 +59,7 @@ function drawGraph2D(NodePositions,Edges,varargin)
     for i=1:NodeNum
         if ns(i)>0
             plot(np(i,1),np(i,2),'bo','MarkerSize',...
-                ns(i),'LineWidth',LineWidth,'Color'); hold on;
+                ns(i),'LineWidth',LineWidth); hold on;
         else
             plot(np(i,1),np(i,2),'bs','MarkerSize',1,...
                 'LineWidth',LineWidth); hold on;
@@ -74,7 +73,7 @@ function drawGraph2D(NodePositions,Edges,varargin)
     for i=1:EdgeNum
         plot([np(Edges(i,1),1) np(Edges(i,2),1)],...
              [np(Edges(i,1),2) np(Edges(i,2),2)],...
-             'r-','LineWidth',LineWidth,'Color',[1,0,0,Transparency]);
+             'r-','LineWidth',LineWidth,'Color',LineColor);
     end
     rotate3d off;
 end
