@@ -133,6 +133,7 @@ function PCAView( Nodes, Edges, data, pc1, pc2, pc1FVE, pc2FVE, varargin)
     
     % Draw tree with specified sizes of nodes
     drawGraph2D([xNodes, yNodes], Edges, 'NodeSizes', NodeSizes);
+    %drawGraph2D([xNodes, yNodes], Edges, 'NodeSizes', NodeSizes);
     
     title('PCA view of principal graph', 'FontSize', 20);
     if pc1FVE>0
