@@ -14,7 +14,6 @@ K = ceil(N*(1-SamplingPercentage));
 
 AllNodePositions = zeros(NumberOfNodes,m,NumberOfComputations);
 AllAdjacencyMatrices = zeros(NumberOfNodes,NumberOfNodes,NumberOfComputations);
-setset
 
 for i=1:NumberOfComputations
 
