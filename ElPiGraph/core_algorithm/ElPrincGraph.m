@@ -64,6 +64,10 @@ function [NodePositions, ElasticMatrix, ReportTable]...
 %       iterations for EM algorithm. 
 %   'eps' with real number which is minimal relative change in the node
 %       positions to be considered the graph embedded (convergence criteria) 
+%   'MaxNumberOfCandidateGraphTopologiesMap' : map, specifying, for each
+%   operation type, the maximum number of candidate graph topologies
+%   (when it is limited the algorithm scales quadratically with the number
+%    of nodes and not cubically)
 
     % Prepare structures for data
     data.X = X;
@@ -88,7 +92,12 @@ function [NodePositions, ElasticMatrix, ReportTable]...
     graph.MaxBlockSize = 0;          % MaxMemorySize/nNodes;
     graph.MaxMemorySize = 10000000;  % 80M is maximal size to use for 
                                      % distance matrix calculation 
-
+    graph.MaxNumberOfCandidateGraphTopologiesMap = containers.Map();
+    graph.MaxNumberOfCandidateGraphTopologiesMap('bisectedge') = +Inf;
+    graph.MaxNumberOfCandidateGraphTopologiesMap('addnode2node') = +Inf;
+    graph.MaxNumberOfCandidateGraphTopologiesMap('removenode') = +Inf;
+    graph.MaxNumberOfCandidateGraphTopologiesMap('shrinkedge') = +Inf;
+    
     % Prepare structures for partition
     part.partition = [];
     part.dists = [];
@@ -152,6 +161,8 @@ function [NodePositions, ElasticMatrix, ReportTable]...
         elseif strcmpi(varargin{i},'BranchingControls')
             graph.PenalizedEnergy = true;
             graph.BranchingControls = varargin{i + 1};
+        elseif strcmpi(varargin{i},'MaxNumberOfCandidateGraphTopologiesMap')
+            graph.MaxNumberOfCandidateGraphTopologiesMap = varargin{i + 1};
         end
         
     end
@@ -252,7 +263,8 @@ function [NodePositions, ElasticMatrix, ReportTable]...
     % First, we optimize the graph without any growth
     
     %[graph, part, ~] = PrimitiveElasticGraphEmbedment(data, graph, part);
-    [graph, part] = ApplyOptimalGraphGrammarOperation(data, graph, part,{});
+    [graph, part] = ApplyOptimalGraphGrammarOperation(data, graph, part,{},...
+        graph.MaxNumberOfCandidateGraphTopologiesMap);
 
     
     % Now we grow the graph up to NumNodes
@@ -262,13 +274,13 @@ function [NodePositions, ElasticMatrix, ReportTable]...
         for k=1:size(growGrammars,2)
             [graph, part] =...
                 ApplyOptimalGraphGrammarOperation(data, graph, part,...
-                growGrammars(:, k));
+                growGrammars(:, k),graph.MaxNumberOfCandidateGraphTopologiesMap);
         end
         % Shrinking
         for k=1:size(shrinkGrammars, 2)
             [graph, part] =...
                 ApplyOptimalGraphGrammarOperation(data, graph, part,...
-                shrinkGrammars(:,k));
+                shrinkGrammars(:,k),graph.MaxNumberOfCandidateGraphTopologiesMap);
         end
         % form report if it is necessary
         if report

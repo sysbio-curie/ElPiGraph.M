@@ -1,6 +1,7 @@
 function [NodePositionArray, ElasticMatrices,...
-    ElsaticVectors, NodeIndicesArray] =...
-    GraphGrammarOperation(NodePositions, Lambdas, Mus, X, type, partition)
+    ElasticVectors, NodeIndicesArray] =...
+    GraphGrammarOperation(NodePositions, Lambdas, Mus, X, type, partition,... 
+    MaxNumberOfCandidateGraphTopologies)
 %
 % This is the core function for application of graph grammar approach for
 % constructing primitive elastic principal graphs
@@ -36,24 +37,28 @@ function [NodePositionArray, ElasticMatrices,...
     switch type
         case 'addnode2node'
             [NodePositionArray, ElasticMatrices,...
-                ElsaticVectors, NodeIndicesArray] =...
-                AddNode2Node(NodePositions, Lambdas, Mus, X, partition);
+                ElasticVectors, NodeIndicesArray] =...
+                AddNode2Node(NodePositions, Lambdas, Mus, X, partition,...
+                MaxNumberOfCandidateGraphTopologies);
         case 'removenode'
             [NodePositionArray, ElasticMatrices,...
-                ElsaticVectors, NodeIndicesArray] =...
-                RemoveNode(NodePositions, Lambdas, Mus);
+                ElasticVectors, NodeIndicesArray] =...
+                RemoveNode(NodePositions, Lambdas, Mus,...
+                MaxNumberOfCandidateGraphTopologies);
         case 'bisectedge'
             [NodePositionArray, ElasticMatrices,...
-                ElsaticVectors, NodeIndicesArray] =...
-                BisectEdge(NodePositions, Lambdas, Mus);
+                ElasticVectors, NodeIndicesArray] =...
+                BisectEdge(NodePositions, Lambdas, Mus,...
+                MaxNumberOfCandidateGraphTopologies);
         case 'shrinkedge'
             [NodePositionArray, ElasticMatrices,...
-                ElsaticVectors, NodeIndicesArray] =...
+                ElasticVectors, NodeIndicesArray] =...
                 ShrinkEdge(NodePositions, Lambdas, Mus);
         case 'addnode2terminalnode'
             [NodePositionArray, ElasticMatrices,...
-                ElsaticVectors, NodeIndicesArray] =...
-                AddNode2TerminalNode(NodePositions, Lambdas, Mus, X, partition);
+                ElasticVectors, NodeIndicesArray] =...
+                AddNode2TerminalNode(NodePositions, Lambdas, Mus, X, partition,...
+                MaxNumberOfCandidateGraphTopologies);
         otherwise
             error('ERROR: operation %s is not defined',type);
     end
@@ -61,8 +66,8 @@ end
 
 
 function [NodePositionArray, ElasticMatrices,...
-    ElsaticVectors, NodeIndicesArray]...
-    = AddNode2Node(NodePositions, L, Mus, X, partition)
+    ElasticVectors, NodeIndicesArray]...
+    = AddNode2Node(NodePositions, L, Mus, X, partition, MaxNumberOfCandidateGraphTopologies)
 %
 % This grammar operation adds a node to each graph node
 % The positions of the node is chosen as a linear extrapolation for a leaf
@@ -71,17 +76,30 @@ function [NodePositionArray, ElasticMatrices,...
 % or
 % as the data point giving the minimum local MSE for a star (without any optimization).
 
+if nargin < 6
+    MaxNumberOfCandidateGraphTopologies = +Inf;
+end
+
+
     NNodes = size(NodePositions,1);
     NNp1 = NNodes + 1;
     NumberOfGraphs = NNodes;
-    NodePositionArray = zeros(NNp1, size(NodePositions, 2), NumberOfGraphs);
-    ElasticMatrices   = zeros(NNp1, NNp1, NumberOfGraphs);
-    ElsaticVectors    = zeros(NNp1, NumberOfGraphs); 
-    NodeIndicesArray  = zeros(NNp1, NumberOfGraphs);
     indL = L > 0;
     Connectivities = sum(indL);
     assoc = accumarray(partition + 1, 1, [NNp1, 1]);
     assoc = assoc(2:end);
+        
+    % In case we have limits on the number of candidates
+    if MaxNumberOfCandidateGraphTopologies<NumberOfGraphs
+        NumberOfGraphs = MaxNumberOfCandidateGraphTopologies;
+    end
+    
+    [sorted_conn,inds] = sort(assoc,'descend');
+    
+    NodePositionArray = zeros(NNp1, size(NodePositions, 2), NumberOfGraphs);
+    ElasticMatrices   = zeros(NNp1, NNp1, NumberOfGraphs);
+    ElasticVectors    = zeros(NNp1, NumberOfGraphs); 
+    NodeIndicesArray  = zeros(NNp1, NumberOfGraphs);
 
     % Create prototypes for new NodePositions, ElasticMatrix and inds
     NPProt = zeros(NNp1, size(NodePositions, 2));
@@ -93,17 +111,20 @@ function [NodePositionArray, ElasticMatrices,...
     NIProt = [1:NNodes,0];
     
     % Main loop
-    for i=1:NNodes
+    for count=1:NumberOfGraphs
+        i = inds(count);
+        %disp(sprintf('Node %i: Number of points: %i',i,assoc(i)));
+        %i = count;
         % Compute mean edge elastisity for edges with node i 
         meanLambda = mean(L(i,indL(i,:)));
         % Put prototypes to corresponding places
-        NodePositionArray(:, :, i) = NPProt;
-        ElasticMatrices(:, :, i) = EMProt;
-        NodeIndicesArray(:, i) = NIProt;
-        ElsaticVectors(:, i) = MuProt;
+        NodePositionArray(:, :, count) = NPProt;
+        ElasticMatrices(:, :, count) = EMProt;
+        NodeIndicesArray(:, count) = NIProt;
+        ElasticVectors(:, count) = MuProt;
         % Add edge to elasticity matrix
-        ElasticMatrices(NNp1, i, i) = meanLambda;
-        ElasticMatrices(i, NNp1, i) = meanLambda;
+        ElasticMatrices(NNp1, i, count) = meanLambda;
+        ElasticMatrices(i, NNp1, count) = meanLambda;
         if(Connectivities(i)==1)
             % Add node to terminal node
             ineighbour = find(indL(i,:));
@@ -111,7 +132,7 @@ function [NodePositionArray, ElasticMatrices,...
             NewNodePosition = 2 * NodePositions(i, :)...
                 - NodePositions(ineighbour, :);
             % Complete elasticity matrix
-            ElsaticVectors(i, i) = Mus(ineighbour);
+            ElasticVectors(i, count) = Mus(ineighbour);
         else
             % Add node to star
             % If number of data points associated with star centre is zero
@@ -125,14 +146,14 @@ function [NodePositionArray, ElasticMatrices,...
             end 
         end
         % Fill NodePosition
-        NodePositionArray(NNp1,:, i) = NewNodePosition;
+        NodePositionArray(NNp1,:, count) = NewNodePosition;
     end
 end
 
 
 function [NodePositionArray, ElasticMatrices,...
-    ElsaticVectors, NodeIndicesArray] =...
-    BisectEdge(NodePositions, Lambdas, Mus)
+    ElasticVectors, NodeIndicesArray] =...
+    BisectEdge(NodePositions, Lambdas, Mus, MaxNumberOfCandidateGraphTopologies)
 %
 % This grammar operation inserts a node inside the middle of each edge
 % The elasticity of the edges do not change
@@ -142,7 +163,11 @@ function [NodePositionArray, ElasticMatrices,...
 % the one of the single neigbour star if this is a dangling edge
 % or 
 % if one starts from a single edge, the star elasticities should be on
-% one of two elements in the diagoal of the ElasticMatrix 
+% one of two elements in the diagonal of the ElasticMatrix 
+
+if nargin < 4
+    MaxNumberOfCandidateGraphTopologies = +Inf;
+end
 
     % Get list of edges
     [start, stop] = find(triu(Lambdas,1));
@@ -150,10 +175,22 @@ function [NodePositionArray, ElasticMatrices,...
     NumberOfGraphs = length(start);
     NNodes = size(NodePositions,1);
     NNp1 = NNodes + 1;
+    
+    % In case we have limits on the number of candidates
+    if MaxNumberOfCandidateGraphTopologies<NumberOfGraphs
+        NumberOfGraphs = MaxNumberOfCandidateGraphTopologies;
+    end
+    
+    edge_lengths = sum((NodePositions(start(:),:)-NodePositions(stop(:),:))'.^2);
+    [es,inds] = sort(edge_lengths,'descend');
+    start = start(inds(1:NumberOfGraphs));
+    stop = stop(inds(1:NumberOfGraphs));
+
+    
     % Preallocate arrays
     NodePositionArray = zeros(NNp1, size(NodePositions, 2), NumberOfGraphs);
     ElasticMatrices   = zeros(NNp1, NNp1, NumberOfGraphs);
-    ElsaticVectors    = zeros(NNp1, NumberOfGraphs);
+    ElasticVectors    = zeros(NNp1, NumberOfGraphs);
     NodeIndicesArray  = zeros(NNp1, NumberOfGraphs);
     % Create prototypes for new NodePositions, ElasticMatrix and inds
     NPProt = zeros(NNp1, size(NodePositions, 2));
@@ -170,7 +207,7 @@ function [NodePositionArray, ElasticMatrices,...
         % Put prototypes to corresponding places
         NodePositionArray(:, :, i) = NPProt;
         ElasticMatrices(:, :, i) = EMProt;
-        ElsaticVectors(:, i) = MuProt;
+        ElasticVectors(:, i) = MuProt;
         NodeIndicesArray(:, i) = NIProt;
         % Fill NodePosition
         NodePositionArray(NNp1,:, i) = NewNodePosition;
@@ -188,20 +225,25 @@ function [NodePositionArray, ElasticMatrices,...
         mu1 = Mus(start(i));
         mu2 = Mus(stop(i));
        if mu1 > 0 && mu2 > 0
-           ElsaticVectors(NNp1, i) = (mu1 + mu2) / 2;
+           ElasticVectors(NNp1, i) = (mu1 + mu2) / 2;
        else
-           ElsaticVectors(NNp1, i) = max(mu1, mu2);
+           ElasticVectors(NNp1, i) = max(mu1, mu2);
        end
     end
 end
 
 
 function [NodePositionArray, ElasticMatrices,...
-    ElsaticVectors, NodeIndicesArray] =...
-    RemoveNode(NodePositions, L, Mus)
+    ElasticVectors, NodeIndicesArray] =...
+    RemoveNode(NodePositions, L, Mus, MaxNumberOfCandidateGraphTopologies)
 %
 % This grammar operation removes a leaf node (connectivity==1)
 %
+
+if nargin < 4
+    MaxNumberOfCandidateGraphTopologies = +Inf;
+end
+
     Connectivities = sum(L > 0);
     % Define sizes
     NNodes = size(NodePositions,1);
@@ -209,7 +251,7 @@ function [NodePositionArray, ElasticMatrices,...
     % Preallocate arrays
     NodePositionArray = zeros(NNodes-1, size(NodePositions,2), NumberOfGraphs);
     ElasticMatrices   = zeros(NNodes-1, NNodes-1, NumberOfGraphs);
-    ElsaticVectors    = zeros(NNodes-1, NumberOfGraphs);
+    ElasticVectors    = zeros(NNodes-1, NumberOfGraphs);
     NodeIndicesArray  = zeros(NNodes-1, NumberOfGraphs);
     k=1;
     for i=1:length(Connectivities)
@@ -218,11 +260,11 @@ function [NodePositionArray, ElasticMatrices,...
             newinds = [1:(i - 1),(i + 1):NNodes];
             NodePositionArray(:, :, k) = NodePositions(newinds, :);
             ElasticMatrices(:, :, k) = L(newinds, newinds);
-            ElsaticVectors(:, k) = Mus(newinds);
+            ElasticVectors(:, k) = Mus(newinds);
             % Correction of stars which now is not stars
             con = sum(ElasticMatrices(:, :, k)>0);
             ind = con(:) == 1;
-            ElsaticVectors(ind, k) = 0;
+            ElasticVectors(ind, k) = 0;
             NodeIndicesArray(:, k) = newinds;
             k=k+1;
         end
@@ -230,8 +272,8 @@ function [NodePositionArray, ElasticMatrices,...
 end
 
 function [NodePositionArray, ElasticMatrices,...
-    ElsaticVectors, NodeIndicesArray] =...
-    ShrinkEdge(NodePositions, L, Mus)
+    ElasticVectors, NodeIndicesArray] =...
+    ShrinkEdge(NodePositions, L, Mus, MaxNumberOfCandidateGraphTopologies)
 %
 % This grammar operation removes an edge from the graph
 % If this is an edge connecting a leaf node then it is equivalent to
@@ -241,6 +283,11 @@ function [NodePositionArray, ElasticMatrices,...
 % The elasticity of the new formed star is the average of two star
 % elasticities.
 %
+
+if nargin < 4
+    MaxNumberOfCandidateGraphTopologies = +Inf;
+end
+
     Connectivities = (sum(L > 0))';
     % Get list of edges
     [start, stop] = find(triu(L, 1));
@@ -256,7 +303,7 @@ function [NodePositionArray, ElasticMatrices,...
     % Preallocate arrays
     NodePositionArray = zeros(NNodes-1, size(NodePositions,2), NumberOfGraphs);
     ElasticMatrices   = zeros(NNodes-1, NNodes-1, NumberOfGraphs);
-    ElsaticVectors    = zeros(NNodes-1, NumberOfGraphs);
+    ElasticVectors    = zeros(NNodes-1, NumberOfGraphs);
     NodeIndicesArray  = zeros(NNodes-1, NumberOfGraphs);
 
     for i=1:length(stop)
@@ -278,13 +325,13 @@ function [NodePositionArray, ElasticMatrices,...
         newinds = [1:(stop(i)-1),(stop(i) + 1):NNodes];
         NodePositionArray(:, :, i) = np(newinds, :);
         ElasticMatrices(:, :, i) = em(newinds, newinds);
-        ElsaticVectors(:, i) = mus(newinds);
+        ElasticVectors(:, i) = mus(newinds);
         NodeIndicesArray(:, i) = newinds;
     end
 end
 
 function [NodePositionArray, ElasticMatrices,...
-    ElsaticVectors, NodeIndicesArray]...
+    ElasticVectors, NodeIndicesArray]...
     = AddNode2TerminalNode(NodePositions, L, Mus, X, partition)
 %
 % This grammar operation adds a node to each leaf graph node 
@@ -299,7 +346,7 @@ function [NodePositionArray, ElasticMatrices,...
     NumberOfGraphs = sum(Connectivities==1);
     NodePositionArray = zeros(NNp1, size(NodePositions, 2), NumberOfGraphs);
     ElasticMatrices   = zeros(NNp1, NNp1, NumberOfGraphs);
-    ElsaticVectors    = zeros(NNp1, NumberOfGraphs); 
+    ElasticVectors    = zeros(NNp1, NumberOfGraphs); 
     NodeIndicesArray  = zeros(NNp1, NumberOfGraphs);
 
     assoc = accumarray(partition + 1, 1, [NNp1, 1]);
@@ -324,7 +371,7 @@ function [NodePositionArray, ElasticMatrices,...
             NodePositionArray(:, :, k) = NPProt;
             ElasticMatrices(:, :, k) = EMProt;
             NodeIndicesArray(:, k) = NIProt;
-            ElsaticVectors(:, k) = MuProt;
+            ElasticVectors(:, k) = MuProt;
             % Add edge to elasticity matrix
             ElasticMatrices(NNp1, i, k) = meanLambda;
             ElasticMatrices(i, NNp1, k) = meanLambda;
@@ -335,7 +382,7 @@ function [NodePositionArray, ElasticMatrices,...
             NewNodePosition = NodePositions(i, :) + (NodePositions(i, :)...
                 - NodePositions(ineighbour, :))/10;
             % Complete elasticity matrix
-            ElsaticVectors(i, k) = Mus(ineighbour);
+            ElasticVectors(i, k) = Mus(ineighbour);
             % Fill NodePosition
             NodePositionArray(NNp1,:, k) = NewNodePosition;
             k = k+1;

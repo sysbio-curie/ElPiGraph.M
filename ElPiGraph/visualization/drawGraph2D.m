@@ -51,7 +51,7 @@ function drawGraph2D(NodePositions,Edges,varargin)
     % Rescale node sizes
     ns = double(NodeSizes);
     scale = 20 * sqrt(sum(std(NodePositions(:,1:2)))) / max(ns);
-    ns = ns * scale;
+    ns = ns * scale*0.25;
     np = double(NodePositions);
     
     % Start drawing. Draw nodes

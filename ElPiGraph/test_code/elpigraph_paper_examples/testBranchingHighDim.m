@@ -24,10 +24,23 @@ for i=1:5
 plot(u(inds(i,:),1),u(inds(i,:),2),'ko','Color',col(i,:)); hold on;
 end
 
+
 [NodePositions2D,Edges2D] = computeElasticPrincipalGraph(u(:,1:2),nnodes,'BranchingControls',[0.01 1],'Plots',0);
 drawGraph2D(NodePositions2D,Edges2D,'LineWidth',6,'ShowClusterNumbers',0);
 
 axis off; axis equal;
+
+figure; 
+
+perplexity = 200;
+uTSNE = tsne(dataz,'Perplexity',perplexity);
+for i=1:5
+plot(uTSNE(inds(i,:),1),uTSNE(inds(i,:),2),'ko','Color',col(i,:)); hold on;
+end
+xlabel('tSNE1','FontSize',14);
+ylabel('tSNE2','FontSize',14);
+title(sprintf('Perplexity = %i',perplexity),'FontSize',20);
+
 
 figure;
 

@@ -1,9 +1,18 @@
 %Test of work
 %General constants
-nData = 1000000;
-dim = 100;
-nNodes = 50;
-X = rand(nData,dim);
+
+%nData = 1000000;
+%dim = 2;
+%nNodes = 50;
+%X = rand(nData,dim);
+
+
+X = load('test_data/tree23/tree23_inflated.data');
+nData = size(X,1);
+dim = size(X,2);
+nNodes = 100;
+
+
 % Randomly select nNodes nodes
 ind = randsample(nData,nNodes);
 NodePositions = X(ind,:);

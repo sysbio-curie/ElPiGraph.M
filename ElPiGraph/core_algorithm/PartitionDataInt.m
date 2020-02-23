@@ -67,6 +67,12 @@ function part = ...
     else
         cent = graph.NodePositions(index, :)';
     end
+    
+
+    if data.dim>0
+    
+    %tic;
+    
     centrLength = sum(cent.^2);
     
     % Create arrays if they are not presented
@@ -87,6 +93,18 @@ function part = ...
             min(bsxfun(@minus, centrLength,  2 * (data.X(ind,:) * cent)), [], 2);
     end
     dists = dists + data.SquaredX;
+    
+    %timeElapsed = toc;
+    
+    %tic;
+    %[partition,dists] = knnsearch(cent',data.X,'k',1); dists=dists.^2;
+    %timeElapsedKnn = toc;
+    %disp(sprintf('%2i : %f',size(cent,2),timeElapsed-timeElapsedKnn))
+    
+    else
+      [partition,dists] = knnsearch(cent',data.X,'k',1,'NSMethod','kdtree'); dists=dists.^2;
+    end
+    
     %Apply trimming
     ind = dists > graph.TrimmingRadius;
     partition(ind) = 0;

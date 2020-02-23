@@ -1,0 +1,2 @@
+folder = 'C:\ElPiGraph\tests\';
+

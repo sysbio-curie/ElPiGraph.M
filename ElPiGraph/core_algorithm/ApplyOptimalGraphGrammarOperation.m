@@ -1,5 +1,6 @@
 function [graphNew, partNew] = ...
-    ApplyOptimalGraphGrammarOperation(data, graph, part, operationtypes)
+    ApplyOptimalGraphGrammarOperation(data, graph, part, operationtypes,...
+    MaxNumberOfCandidateGraphTopologiesMap)
 % This functinon applies the most optimal graph grammar operation of
 % operationtype for the embedment of an elastic graph described by
 % ElasticMatrix.
@@ -75,15 +76,19 @@ function [graphNew, partNew] = ...
     ElasticVectorsAll = [];
     NodeIndicesArrayAll = [];
     for i=1:size(operationtypes,1)
+        MaxNumberOfCandidateGraphTopologies = MaxNumberOfCandidateGraphTopologiesMap(char(operationtypes(i)));
         [NodePositionArray, ElasticMatrices,...
             ElsaticVectors, NodeIndicesArray] =... 
             GraphGrammarOperation(graph.NodePositions, graph.Lambdas,...
-            graph.Mus, data.X, char(operationtypes(i)), part.partition);
+            graph.Mus, data.X, char(operationtypes(i)), part.partition, ...
+            MaxNumberOfCandidateGraphTopologies);
         NodePositionArrayAll = cat(3, NodePositionArrayAll, NodePositionArray);
         ElasticMatricesAll   = cat(3, ElasticMatricesAll, ElasticMatrices);
         ElasticVectorsAll    = cat(2, ElasticVectorsAll, ElsaticVectors);
         NodeIndicesArrayAll  = cat(2, NodeIndicesArrayAll, NodeIndicesArray);
     end
+    
+    
 
     % special case - if the set of operations is empty then we optimize the
     % unmodified matrix
@@ -95,6 +100,7 @@ function [graphNew, partNew] = ...
         NodeIndicesArrayAll = 1:size(graph.NodePositions,1);
     end
     
+    %fprintf('Number of candidate graphs: %i\n',size(ElasticMatricesAll,3));
     
     % Currently found the best Energy
     minEnergy = realmax;
