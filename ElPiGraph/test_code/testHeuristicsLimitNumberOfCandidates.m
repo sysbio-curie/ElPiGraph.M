@@ -79,7 +79,7 @@ save(filename,'Elapsedtime','NodePositions','Edges','ReportTable','ElasticEnergy
 
 
 % =================================
-% NORMAL MODE
+% EXACT MODE
 % =================================
 
 max_candidate_map('bisectedge') = +Inf;

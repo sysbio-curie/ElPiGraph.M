@@ -21,7 +21,7 @@ drawnow;
 
 %figure;
 clear dist_graph_down;
-for j=3:5+1
+for j=1:5+1
     figure;
 for i=1:n_repeats
 subsampleSize = j*50;
@@ -33,7 +33,7 @@ dX = X(randsample(Npoints,subsampleSize),:);
 %plot(dX(:,1),dX(:,2),'k.','MarkerSize',5); 
 %drawGraph2D(np_down,ed_down,'LineColor','g'); 
 %drawnow;
-dist_graph_down(j,i) = distance_between_nodes(np,ed,np_down,ed_down);
+dist_graph_down(j,i) = distance_between_nodes(np,ed,np_down,ed_down,1);
 title(sprintf('Subsample size = %i',subsampleSize),'FontSize',14);
 drawnow;
 disp(sprintf('%i,%i: %f',size(dX,1),i,dist_graph_down(j,i)));
@@ -63,7 +63,7 @@ for ii=1:n_repeats/2
     end
     
     [np_over,ed_over,ReportTable] = computeElasticPrincipalGraph(X1,maxNumNodes,'BranchingControls',[alpha 1],'Lambda',lambda,'Plots',0,'verbose',0); 
-    dist_graph_over(jj,ii) = distance_between_nodes(np,ed,np_over,ed_over);
+    dist_graph_over(jj,ii) = distance_between_nodes(np,ed,np_over,ed_over,1);
     title(sprintf('Subsample size = %i',size(X1,1)),'FontSize',14);
     drawnow;
     disp(sprintf('%i,%i: %f',size(X1,1),ii,dist_graph_over(jj,ii)));

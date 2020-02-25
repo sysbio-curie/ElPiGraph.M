@@ -1,5 +1,6 @@
-function [dist_graph,dists,reciprocal_dists] = distance_between_nodes(np1,ed1,np2,ed2,makeplots,only_between_stars)
+function [dist_graph,dists,reciprocal_dists,TP,FP,FN] = distance_between_nodes(np1,ed1,np2,ed2,makeplots,only_between_stars)
 % Computes distance between two graphs
+% we assume that np1, ed1 is a reference graph
 
 if nargin<5
     makeplots = 0;
@@ -139,6 +140,14 @@ end
 end
 
 dist_graph = sqrt(dist_graph)/tree_length;
+
+NumStars_groundtruth = sum(conn1>2);
+NumStars_constructed = sum(conn2>2);
+
+TP = length(reciprocal_dists);
+FP =  NumStars_constructed-TP;
+FN =  NumStars_groundtruth-TP;
+
 
 end
 
