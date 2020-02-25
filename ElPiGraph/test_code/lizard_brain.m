@@ -1,8 +1,8 @@
 function [data,irx,v,u,s,np,ed] = lizard_brain(number_of_branches_minus_2,dimension,varargin)
 
-fpintf('===========================================================\n');
-fpintf('LIZARD BRAIN FUNCTION FROM test_code FOLDER OF ELPIGRAPH!!!\n');
-fpintf('===========================================================\n');
+fprintf('===========================================================\n');
+fprintf('LIZARD BRAIN FUNCTION FROM test_code FOLDER OF ELPIGRAPH!!!\n');
+fprintf('===========================================================\n');
 
 rand('twister',10)
 epsilon = 0.005;
